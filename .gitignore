@@ -43,4 +43,5 @@ coverage.xml
 *.cover
 
 data/
+doc-index-64.faiss
 

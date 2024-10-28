@@ -19,13 +19,13 @@ pip install -r requirements.txt
 Start the FastAPI server:
 
 ```bash
-uvicorn app.main:app --reload
+python -m frontend.app.run
 ```
 
 In a seperate terminal, start the streamlit app:
 
 ```bash
-cd app
+cd frontend/app
 streamlit run streamlit_app.py
 ```
 

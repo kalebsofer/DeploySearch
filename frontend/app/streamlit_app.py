@@ -26,7 +26,7 @@ if "search_performed" not in st.session_state:
 
 if search_button and query:
     try:
-        response = requests.post("http://localhost:8000/search", json={"query": query})
+        response = requests.post("http://localhost:8051/search", json={"query": query})
 
         if response.status_code == 200:
             st.session_state.search_performed = True
