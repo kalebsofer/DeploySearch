@@ -1,0 +1,15 @@
+
+
+
+# Pseudocode
+
+- Get a query
+- Tokenize
+- Embed
+- Project
+
+- Compare to ALL docs <- we need a quick way to compare a query to all docs
+- Return top k doc projections
+- Reverse lookup projections to get top k documents themselves
+- Return top k docs
+
