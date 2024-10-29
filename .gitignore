@@ -44,4 +44,4 @@ coverage.xml
 
 data/
 doc-index-64.faiss
-
+.env.prod
