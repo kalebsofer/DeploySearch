@@ -3,6 +3,8 @@ import torch.nn as nn
 import pandas as pd
 import faiss
 import io
+import tempfile
+from pathlib import Path
 from minio import Minio
 from .config.settings import get_settings
 from .models.core import TwoTowerModel
@@ -57,10 +59,16 @@ class SearchEngine:
             )
             self.df = pd.read_parquet(io.BytesIO(data_bytes))
 
-            # Load FAISS index from MinIO
+            # Load FAISS index from MinIO using a temporary file
             index_bytes = self._get_file_from_minio("data", "doc-index-64.faiss")
-            index_buffer = io.BytesIO(index_bytes)
-            self.index = faiss.read_index(index_buffer)
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                temp_file.write(index_bytes)
+                temp_path = temp_file.name
+
+            try:
+                self.index = faiss.read_index(temp_path)
+            finally:
+                Path(temp_path).unlink()  # Clean up temp file
 
             # Load model weights from MinIO
             model_bytes = self._get_file_from_minio(

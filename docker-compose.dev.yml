@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     build:
@@ -11,7 +9,15 @@ services:
     environment:
       - BACKEND_URL=http://backend:8051
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -28,6 +34,14 @@ services:
     depends_on:
       minio:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8051/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+    networks:
+      - app-network
 
   minio:
     build:
@@ -47,3 +61,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

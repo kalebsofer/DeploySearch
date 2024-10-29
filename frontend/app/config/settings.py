@@ -2,10 +2,8 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    MINIO_URL: str = "minio:9000"
-    MINIO_ACCESS_KEY: str = "minioadmin"
-    MINIO_SECRET_KEY: str = "minioadmin"
-    MINIO_SECURE: bool = False
+    BACKEND_URL: str = "http://backend:8051"
+    TIMEOUT_SECONDS: int = 30
 
     class Config:
         env_file = ".env.dev"

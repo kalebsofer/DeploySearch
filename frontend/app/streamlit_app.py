@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
-from .config.settings import get_settings
+from config.settings import get_settings
 
 settings = get_settings()
 
