@@ -6,6 +6,11 @@ services:
     image: kalebrs/deploysearch-nginx:latest
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - letsencrypt:/etc/letsencrypt
+      - webroot:/var/www/html
     networks:
       - app-network
     healthcheck:
@@ -98,4 +103,6 @@ networks:
     driver: bridge
 
 volumes:
+  letsencrypt:
+  webroot:
   minio_data:

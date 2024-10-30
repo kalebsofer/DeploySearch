@@ -1,7 +1,30 @@
 FROM nginx:alpine
 
-RUN rm /etc/nginx/conf.d/default.conf
+# Install certbot and dependencies
+RUN apk add --no-cache \
+    certbot \
+    certbot-nginx \
+    openssl \
+    iputils \
+    bind-tools \
+    netcat-openbsd
 
-COPY nginx.conf /etc/nginx/conf.d/
+# Remove default config and create required directories
+RUN rm -f /etc/nginx/conf.d/default.conf
+RUN mkdir -p /var/www/html
+RUN mkdir -p /etc/letsencrypt
+RUN mkdir -p /etc/nginx/conf.d
 
-EXPOSE 80
+# Copy nginx config and SSL setup script
+COPY conf.d/* /etc/nginx/conf.d/
+COPY setup-ssl.sh /
+
+# Make script executable
+RUN chmod +x /setup-ssl.sh
+
+EXPOSE 80 443
+
+# Copy the initial config to a backup location
+RUN cp /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.orig
+
+ENTRYPOINT ["/setup-ssl.sh"]
