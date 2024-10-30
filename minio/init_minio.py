@@ -4,38 +4,43 @@ from pathlib import Path
 
 
 def init_minio():
-    """Initialize MinIO with required buckets and files."""
+    """Initialize MinIO with data bucket and required files."""
 
     # Initialize MinIO client
     client = Minio(
         "localhost:9000",
-        access_key=os.getenv("MINIO_ROOT_USER", "minioadmin"),
-        secret_key=os.getenv("MINIO_ROOT_PASSWORD", "minioadmin"),
-        secure=False,
+        access_key=os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
+        secret_key=os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+        secure=os.getenv("MINIO_SECURE", "false").lower() == "true",
     )
 
-    # Create required buckets
-    buckets = ["models", "data"]
-    for bucket in buckets:
-        if not client.bucket_exists(bucket):
-            print(f"Creating bucket: {bucket}")
-            client.make_bucket(bucket)
+    # Create bucket
+    try:
+        if not client.bucket_exists("data"):
+            print("Creating bucket: data")
+            client.make_bucket("data")
+    except Exception as e:
+        print(f"Error creating bucket data: {e}")
 
-    # Upload model files
-    model_files = {
-        "models": ["word-vector-embeddings.model", "two_tower_state_dict.pth"],
-        "data": ["training-with-tokens.parquet", "doc-index-64.faiss"],
-    }
+    files_to_upload = [
+        "word-vector-embeddings.model",
+        "training-with-tokens.parquet",
+        "doc-index-64.faiss",
+        "two_tower_state_dict.pth",
+    ]
 
-    # Upload files from local directories to MinIO
-    for bucket, files in model_files.items():
-        for file in files:
-            local_path = Path("/data") / file
-            if local_path.exists():
-                print(f"Uploading {file} to {bucket}")
-                client.fput_object(bucket, file, str(local_path))
-            else:
-                print(f"Warning: {file} not found in local directory")
+    # Upload files from /data directory (where Dockerfile copied them)
+    for file in files_to_upload:
+        source_path = Path("/data") / file  # Files copied here during build
+        if source_path.exists():
+            try:
+                print(f"Uploading {file} to bucket")
+                client.fput_object("data", file, str(source_path))
+                print(f"Successfully uploaded {file}")
+            except Exception as e:
+                print(f"Error uploading {file}: {e}")
+        else:
+            print(f"Warning: Source file not found: {source_path}")
 
 
 if __name__ == "__main__":

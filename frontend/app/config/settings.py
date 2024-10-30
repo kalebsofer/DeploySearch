@@ -1,8 +1,9 @@
+import os
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    BACKEND_URL: str = "http://backend:8051"
+    BACKEND_URL: str
     TIMEOUT_SECONDS: int = 30
 
     class Config:

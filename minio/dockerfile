@@ -14,10 +14,13 @@ RUN wget https://dl.min.io/server/minio/release/linux-amd64/minio && \
 # Install MinIO Python client
 RUN pip install minio --no-cache-dir
 
-# Create minio user and data directory
-RUN useradd -r -u 1000 -g root minio && \
-    mkdir -p /data && \
-    chown -R minio:root /data
+# Create minio user
+RUN useradd -r -u 1000 -g root minio
+
+# Create data directory and copy files
+COPY ./data /data
+RUN chown -R minio:root /data && \
+    chmod -R u+rxw /data
 
 # Copy initialization files
 COPY init.sh /usr/local/bin/init.sh

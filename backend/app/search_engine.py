@@ -71,9 +71,7 @@ class SearchEngine:
                 Path(temp_path).unlink()  # Clean up temp file
 
             # Load model weights from MinIO
-            model_bytes = self._get_file_from_minio(
-                "models", "two_tower_state_dict.pth"
-            )
+            model_bytes = self._get_file_from_minio("data", "two_tower_state_dict.pth")
             model_buffer = io.BytesIO(model_bytes)
 
             # Initialize model

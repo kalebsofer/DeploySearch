@@ -3,10 +3,12 @@ services:
     build:
       context: ./frontend
       dockerfile: dockerfile
+    image: kalebrs/deploysearch-frontend:latest
     ports:
       - "8501:8501"
     env_file: .env.dev
     environment:
+      - ENV=dev
       - BACKEND_URL=http://backend:8051
     depends_on:
       backend:
@@ -23,13 +25,13 @@ services:
     build:
       context: ./backend
       dockerfile: dockerfile
+    image: kalebrs/deploysearch-backend:latest
     ports:
       - "8051:8051"
     env_file: .env.dev
     environment:
+      - ENV=dev
       - MINIO_URL=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
       - MINIO_SECURE=false
     depends_on:
       minio:
@@ -47,14 +49,13 @@ services:
     build:
       context: ./minio
       dockerfile: dockerfile
+    image: kalebrs/deploysearch-minio:latest
     ports:
       - "9000:9000"
       - "9001:9001"
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+    env_file: .env.dev
     volumes:
-      - ./minio/data:/data:rw
+      - minio_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -67,3 +68,6 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  minio_data:

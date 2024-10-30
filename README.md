@@ -10,7 +10,7 @@ The Search Engine API processes natural language queries and returns relevant do
 
 ![stack](/public/images/stack.png)
 
-The project is containerized using Docker Compose, it is deployed to our own remote server and accesible here: [simplesearchengine.com](https://simplesearchengine.com).
+The service is containerized using Docker Compose, see below, it is deployed to our own remote server and accessible here: [simplesearchengine.com](https://simplesearchengine.com).
 
 ![containers](/public/images/containers.png)
 
@@ -59,9 +59,6 @@ The project is containerized using Docker Compose, it is deployed to our own rem
     ```bash
     # Development environment
     docker-compose -f docker-compose.dev.yml up --build
-
-    # Production environment
-    docker-compose up --build
     ```
 
 2. Run automated tests:

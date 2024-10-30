@@ -7,7 +7,6 @@ from minio import Minio
 from minio.error import S3Error
 from ..config.settings import get_settings
 
-
 settings = get_settings()
 
 
@@ -47,7 +46,7 @@ def load_word2vec(random_seed=42):
 
     try:
         # Try to load from MinIO
-        response = minio_client.get_object("models", model_name)
+        response = minio_client.get_object("data", model_name)
         model_bytes = response.read()
 
         # Save temporarily and load with gensim
@@ -69,7 +68,7 @@ def load_word2vec(random_seed=42):
     except S3Error as e:
         raise ModelLoadError(
             f"Failed to load word2vec model from MinIO: {str(e)}. "
-            "Please ensure the model file exists in the MinIO 'models' bucket."
+            "Please ensure the model file exists in the MinIO 'data' bucket."
         ) from e
     except Exception as e:
         raise ModelLoadError(
