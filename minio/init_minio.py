@@ -29,18 +29,23 @@ def init_minio():
         "two_tower_state_dict.pth",
     ]
 
-    # Upload files from /data directory (where Dockerfile copied them)
+    # Upload files from /data directory only if they don't exist in the bucket
     for file in files_to_upload:
-        source_path = Path("/data") / file  # Files copied here during build
-        if source_path.exists():
-            try:
-                print(f"Uploading {file} to bucket")
-                client.fput_object("data", file, str(source_path))
-                print(f"Successfully uploaded {file}")
-            except Exception as e:
-                print(f"Error uploading {file}: {e}")
-        else:
-            print(f"Warning: Source file not found: {source_path}")
+        source_path = Path("/data") / file
+        try:
+            # Check if file exists in bucket
+            client.stat_object("data", file)
+            print(f"File {file} already exists in bucket")
+        except:
+            if source_path.exists():
+                try:
+                    print(f"Uploading {file} to bucket")
+                    client.fput_object("data", file, str(source_path))
+                    print(f"Successfully uploaded {file}")
+                except Exception as e:
+                    print(f"Error uploading {file}: {e}")
+            else:
+                print(f"Warning: Source file not found: {source_path}")
 
 
 if __name__ == "__main__":

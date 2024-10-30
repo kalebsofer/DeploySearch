@@ -17,9 +17,9 @@ RUN pip install minio --no-cache-dir
 # Create minio user
 RUN useradd -r -u 1000 -g root minio
 
-# Create data directory and copy files
-COPY ./data /data
-RUN chown -R minio:root /data && \
+# Create data directory
+RUN mkdir -p /data && \
+    chown -R minio:root /data && \
     chmod -R u+rxw /data
 
 # Copy initialization files
