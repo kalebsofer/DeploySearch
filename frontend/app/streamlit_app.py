@@ -1,6 +1,9 @@
 import streamlit as st
 import requests
 import pandas as pd
+from config.settings import get_settings
+
+settings = get_settings()
 
 st.set_page_config(page_title="Simple Search Engine", layout="wide")
 
@@ -10,6 +13,21 @@ def truncate_text(text, max_length=50):
 def display_document(docs, selected_index, doc_type):
     st.write(f"{doc_type} Document:")
     st.write(docs[selected_index])
+
+
+def search_documents(query: str):
+    try:
+        response = requests.post(
+            f"{settings.BACKEND_URL}/search",
+            json={"query": query},
+            timeout=settings.TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error connecting to backend service: {str(e)}")
+        return None
+
 
 st.title("Simple Search Engine")
 
@@ -25,27 +43,19 @@ if "search_performed" not in st.session_state:
     st.session_state.search_performed = False
 
 if search_button and query:
-    try:
-        response = requests.post("http://localhost:8051/search", json={"query": query})
-
-        if response.status_code == 200:
-            st.session_state.search_performed = True
-            data = response.json()
-
-            # Store the response data in session state
-            st.session_state.rel_docs = data["rel_docs"]
-            st.session_state.rel_docs_sim = data["rel_docs_sim"]
-        else:
-            st.error(f"Error: Unable to retrieve documents. Status code: {response.status_code}")
-            st.write(f"Response content: {response.text}")
-    except Exception as e:
-        st.error(f"Error occurred: {str(e)}")
+    results = search_documents(query)
+    if results:
+        st.session_state.search_performed = True
+        st.session_state.rel_docs = results["rel_docs"]
+        st.session_state.rel_docs_sim = results["rel_docs_sim"]
 
 if st.session_state.search_performed:
-    df_similar = pd.DataFrame({
-        "Document": [truncate_text(doc) for doc in st.session_state.rel_docs],
-        "Cosine Similarity": st.session_state.rel_docs_sim,  # Using rel_docs_sim instead of distances
-    }).reset_index(drop=True)
+    df_similar = pd.DataFrame(
+        {
+            "Document": [truncate_text(doc) for doc in st.session_state.rel_docs],
+            "Cosine Similarity": st.session_state.rel_docs_sim,
+        }
+    ).reset_index(drop=True)
 
     with col1:
         st.subheader("Most Similar Results:")

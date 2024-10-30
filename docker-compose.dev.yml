@@ -1,0 +1,73 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
+    image: kalebrs/deploysearch-frontend:latest
+    ports:
+      - "8501:8501"
+    env_file: .env.dev
+    environment:
+      - ENV=dev
+      - BACKEND_URL=http://backend:8051
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    image: kalebrs/deploysearch-backend:latest
+    ports:
+      - "8051:8051"
+    env_file: .env.dev
+    environment:
+      - ENV=dev
+      - MINIO_URL=minio:9000
+      - MINIO_SECURE=false
+    depends_on:
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8051/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+    networks:
+      - app-network
+
+  minio:
+    build:
+      context: ./minio
+      dockerfile: dockerfile
+    image: kalebrs/deploysearch-minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    env_file: .env.dev
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  minio_data:
