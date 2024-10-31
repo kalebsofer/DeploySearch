@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 from config.settings import get_settings
+from logs import log_manager
 
 settings = get_settings()
 
@@ -74,6 +75,19 @@ if st.session_state.search_performed:
         st.subheader("Selected Document:")
         if len(df_similar) > 0 and selected_similar is not None:
             display_document(st.session_state.rel_docs, selected_similar, "Similar")
+
+            log_manager.log_search(
+                query=query,
+                selected_document=st.session_state.rel_docs[selected_similar],
+                similarity_score=st.session_state.rel_docs_sim[selected_similar],
+            )
+
+            if st.button("Thanks!", key="thanks_button"):
+                log_manager.update_feedback(
+                    query=query,
+                    selected_document=st.session_state.rel_docs[selected_similar],
+                )
+                st.success("Thank you for your feedback!")
 
 else:
     st.write("Enter a query and click 'Search' to see results.")
