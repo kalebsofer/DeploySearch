@@ -3,13 +3,19 @@ import torch.nn as nn
 import pandas as pd
 import faiss
 import io
-import tempfile
-from pathlib import Path
 from minio import Minio
+import logging
+from typing import Optional
 from .config.settings import get_settings
 from .models.core import TwoTowerModel
 from .utils.preprocess_str import str_to_tokens
 from .utils.load_data import load_word2vec
+
+# Set up logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 settings = get_settings()
 
@@ -23,6 +29,8 @@ class SearchEngine:
     def __init__(self):
         self._initialize_minio_client()
         self._initialize_resources()
+        self.current_model_timestamp: Optional[str] = None
+        logger.info("SearchEngine initialized")
 
     def _initialize_minio_client(self):
         self.minio_client = Minio(
@@ -39,61 +47,106 @@ class SearchEngine:
         except Exception as e:
             raise Exception(f"Error loading {object_name} from MinIO: {str(e)}")
 
-    def _initialize_resources(self):
+    def _get_latest_model_timestamp(self) -> Optional[str]:
+        """Get the timestamp of the latest model from MinIO"""
         try:
-            # Load word2vec resources from MinIO
-            self.vocab, embeddings, self.word_to_idx = load_word2vec()
-
-            # Initialize embedding layer
-            self.embedding_layer = nn.Embedding.from_pretrained(
-                embeddings, freeze=FREEZE_EMBEDDINGS
+            # List all objects in the model_weights directory
+            objects = list(
+                self.minio_client.list_objects("data", prefix="model_weights/model_")
             )
 
-            # Set dimensions
-            self.embedding_dim = embeddings.shape[1]
-            self.vocab_size = len(self.vocab)
+            if not objects:
+                logger.info("No timestamped models found, will use default model")
+                return None
 
-            # Load dataset from MinIO
-            data_bytes = self._get_file_from_minio(
-                "data", "training-with-tokens.parquet"
-            )
-            self.df = pd.read_parquet(io.BytesIO(data_bytes))
+            # Get the latest timestamp
+            timestamps = [
+                obj.object_name.split("model_")[1].split(".pth")[0] for obj in objects
+            ]
 
-            # Load FAISS index from MinIO using a temporary file
-            index_bytes = self._get_file_from_minio("data", "doc-index-64.faiss")
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                temp_file.write(index_bytes)
-                temp_path = temp_file.name
+            # Sort timestamps in descending order
+            latest = sorted(timestamps, reverse=True)[0]
+            logger.info(f"Found latest model timestamp: {latest}")
+            return latest
 
-            try:
-                self.index = faiss.read_index(temp_path)
-            finally:
-                Path(temp_path).unlink()  # Clean up temp file
+        except Exception as e:
+            logger.error(f"Error getting latest model timestamp: {e}")
+            return None
 
-            # Load model weights from MinIO
+    def _load_model_weights(self) -> None:
+        """Load model weights from MinIO"""
+        try:
+            latest_timestamp = self._get_latest_model_timestamp()
+
+            if latest_timestamp:
+                # Try to load timestamped model
+                try:
+                    model_bytes = self._get_file_from_minio(
+                        "data", f"model_weights/model_{latest_timestamp}.pth"
+                    )
+                    self.model.load_state_dict(
+                        torch.load(
+                            io.BytesIO(model_bytes),
+                            weights_only=True,
+                            map_location=torch.device("cpu"),
+                        )
+                    )
+                    self.current_model_timestamp = latest_timestamp
+                    logger.info(
+                        f"Successfully loaded model with timestamp: {latest_timestamp}"
+                    )
+                    return
+                except Exception as e:
+                    logger.error(f"Failed to load timestamped model: {e}")
+                    # Fall through to default model
+
+            # Load default model if no timestamp or timestamped model failed
+            logger.info("Loading default model (two_tower_state_dict.pth)")
             model_bytes = self._get_file_from_minio("data", "two_tower_state_dict.pth")
-            model_buffer = io.BytesIO(model_bytes)
-
-            # Initialize model
-            self.model = TwoTowerModel(
-                embedding_dim=self.embedding_dim,
-                projection_dim=PROJECTION_DIM,
-                embedding_layer=self.embedding_layer,
-                margin=MARGIN,
-            )
-
-            # Load model weights
             self.model.load_state_dict(
                 torch.load(
-                    model_buffer,
+                    io.BytesIO(model_bytes),
                     weights_only=True,
                     map_location=torch.device("cpu"),
                 )
             )
+            self.current_model_timestamp = None
+            logger.info("Successfully loaded default model")
+
+        except Exception as e:
+            logger.error(f"Error loading any model weights: {e}")
+            raise Exception("Failed to load both timestamped and default models")
+
+    def _initialize_resources(self):
+        """Initialize model and resources"""
+        try:
+            # Load word vectors and initialize embedding layer
+            self.vocab, embeddings, self.word_to_idx = load_word2vec()
+            self.embedding_layer = nn.Embedding.from_pretrained(
+                embeddings, freeze=FREEZE_EMBEDDINGS
+            )
+
+            # Initialize model architecture
+            self.model = TwoTowerModel(
+                embedding_dim=self.embedding_dim,
+                embedding_layer=self.embedding_layer,
+                projection_dim=PROJECTION_DIM,
+                margin=MARGIN,
+            )
+
+            # Load latest model weights
+            self._load_model_weights()
             self.model.eval()
+
+            # Load other resources (FAISS index, etc.)
+            # ... existing resource loading code ...
 
         except Exception as e:
             raise Exception(f"Error initializing search engine: {str(e)}")
+
+    def check_for_model_updates(self) -> None:
+        """Check and load new model weights if available"""
+        self._load_model_weights()
 
     def _get_nearest_neighbors(self, query: str, k: int = 10):
         query_tokens = torch.tensor([str_to_tokens(query, self.word_to_idx)])

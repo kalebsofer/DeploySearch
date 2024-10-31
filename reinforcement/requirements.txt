@@ -1,0 +1,21 @@
+# Core ML/Data Libraries
+torch
+numpy
+pandas
+faiss-cpu  # For vector similarity search
+
+# NLP Libraries
+nltk
+gensim
+
+# Storage/Database
+minio
+psycopg2-binary  # PostgreSQL adapter
+python-dotenv  # For loading .env files
+
+# Settings Management
+pydantic
+pydantic-settings  # For settings management
+
+# Logging/Utils
+python-json-logger  # Optional, for structured logging
