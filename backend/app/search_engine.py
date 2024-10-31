@@ -95,7 +95,7 @@ class SearchEngine:
         except Exception as e:
             raise Exception(f"Error initializing search engine: {str(e)}")
 
-    def _get_nearest_neighbors(self, query: str, k: int = 5):
+    def _get_nearest_neighbors(self, query: str, k: int = 10):
         query_tokens = torch.tensor([str_to_tokens(query, self.word_to_idx)])
         query_mask = (query_tokens != 0).float()
 

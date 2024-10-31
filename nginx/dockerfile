@@ -7,7 +7,8 @@ RUN apk add --no-cache \
     openssl \
     iputils \
     bind-tools \
-    netcat-openbsd
+    netcat-openbsd \
+    dos2unix
 
 # Remove default config and create required directories
 RUN rm -f /etc/nginx/conf.d/default.conf
@@ -17,10 +18,12 @@ RUN mkdir -p /etc/nginx/conf.d
 
 # Copy nginx config and SSL setup script
 COPY conf.d/* /etc/nginx/conf.d/
-COPY setup-ssl.sh /
+COPY setup-ssl.sh /setup-ssl.sh
 
-# Make script executable
-RUN chmod +x /setup-ssl.sh
+# Make script executable and ensure proper line endings
+RUN chmod +x /setup-ssl.sh && \
+    dos2unix /setup-ssl.sh 2>/dev/null || true && \
+    ls -la /setup-ssl.sh  # Verify permissions
 
 EXPOSE 80 443
 

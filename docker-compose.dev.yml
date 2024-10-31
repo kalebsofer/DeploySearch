@@ -1,9 +1,14 @@
+# Define env_file at the top level
+x-env-file: &env-file
+  env_file: .env.dev
+
 services:
   nginx:
     build:
       context: ./nginx
       dockerfile: dockerfile
     image: kalebrs/deploysearch-nginx:latest
+    <<: *env-file
     ports:
       - "80:80"
       - "443:443"
@@ -36,12 +41,14 @@ services:
       context: ./frontend
       dockerfile: dockerfile
     image: kalebrs/deploysearch-frontend:latest
-    env_file: .env.dev
+    <<: *env-file
     environment:
       - ENV=dev
       - BACKEND_URL=http://backend:8051
     depends_on:
       backend:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     networks:
       - app-network
@@ -59,7 +66,7 @@ services:
       context: ./backend
       dockerfile: dockerfile
     image: kalebrs/deploysearch-backend:latest
-    env_file: .env.dev
+    <<: *env-file
     environment:
       - ENV=dev
       - MINIO_URL=minio:9000
@@ -83,10 +90,10 @@ services:
       context: ./minio
       dockerfile: dockerfile
     image: kalebrs/deploysearch-minio:latest
+    <<: *env-file
     ports:
       - "9000:9000"
       - "9001:9001"
-    env_file: .env.dev
     volumes:
       - minio_data:/data
     healthcheck:
@@ -98,6 +105,39 @@ services:
     networks:
       - app-network
 
+  postgres:
+    build:
+      context: ./postgres
+      dockerfile: dockerfile
+    image: kalebrs/deploysearch-postgres:latest
+    <<: *env-file
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - app-network
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_LISTEN_PORT: 80
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+    restart: unless-stopped
+
 networks:
   app-network:
     driver: bridge
@@ -106,3 +146,4 @@ volumes:
   letsencrypt:
   webroot:
   minio_data:
+  postgres_data:

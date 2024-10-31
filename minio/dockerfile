@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install -y curl wget && \
+    apt-get install -y curl wget dos2unix && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -22,15 +22,23 @@ RUN mkdir -p /data && \
     chown -R minio:root /data && \
     chmod -R u+rxw /data
 
-# Copy initialization files
-COPY init.sh /usr/local/bin/init.sh
-COPY init_minio.py /usr/local/bin/init_minio.py
+# Copy initialization files directly to /usr/local/bin
+COPY init.sh /usr/local/bin/
+COPY init_minio.py /usr/local/bin/
 
-# Make script executable
-RUN chmod +x /usr/local/bin/init.sh && \
-    chown minio:root /usr/local/bin/init.sh /usr/local/bin/init_minio.py
+# Fix line endings and make executable
+RUN dos2unix /usr/local/bin/init.sh && \
+    chmod +x /usr/local/bin/init.sh && \
+    chmod +x /usr/local/bin/init_minio.py && \
+    chown minio:root /usr/local/bin/init.sh && \
+    chown minio:root /usr/local/bin/init_minio.py
+
+# Verify files exist and are executable
+RUN ls -la /usr/local/bin/init.sh && \
+    ls -la /usr/local/bin/init_minio.py
 
 USER minio
 EXPOSE 9000 9001
 
+# Update ENTRYPOINT to use the new path
 ENTRYPOINT ["/usr/local/bin/init.sh"]

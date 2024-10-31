@@ -10,7 +10,7 @@ until curl -sf "http://localhost:9000/minio/health/live"; do
     sleep 1
 done
 
-# Run the initialization script
+# Run the initialization script with correct path
 echo "Initializing MinIO..."
 python3 /usr/local/bin/init_minio.py
 
