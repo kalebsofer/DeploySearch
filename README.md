@@ -12,7 +12,7 @@ The Search Engine API processes natural language queries and returns relevant do
 
 The service is containerized using Docker Compose, see below, it is deployed to our own remote server and accessible here: [simplesearchengine.com](https://simplesearchengine.com).
 
-![containers](/public/images/containers.pdf)
+![containers](/public/images/containers-1.png)
 
 
 ## Getting Started
