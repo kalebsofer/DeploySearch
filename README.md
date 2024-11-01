@@ -1,18 +1,21 @@
 # Deploying Two Tower Search
 
-[simplesearchengine.com](https://simplesearchengine.com)
+### Website: [simplesearchengine.com](https://simplesearchengine.com)
 
-A high-performance semantic search engine built with FastAPI, PyTorch and Faiss. This service provides real-time document search capabilities using a Two-Tower RNN model, see [TwoTowerSearch](https://github.com/kalebsofer/TwoTowerSearch) for more details.
+A high-performance semantic search engine built with FastAPI, PyTorch and Faiss. This service provides real-time document search capabilities using Two-Tower RNN model, see [TwoTowerSearch](https://github.com/kalebsofer/TwoTowerSearch) for more details.
 
 ## Overview
 
-The Search Engine API processes natural language queries and returns relevant documents based on semantic similarity. It uses a two-tower neural network architecture for embedding generation and FAISS for efficient similarity search.
+This Search Engine API processes natural language queries and returns relevant documents based on semantic similarity. It uses a two-tower neural network architecture for embedding generation and FAISS for efficient similarity search.
+
+### Stack
 
 ![stack](/public/images/stack.png)
 
-The service is containerized using Docker Compose, see below, it is deployed to our own remote server and accessible here: [simplesearchengine.com](https://simplesearchengine.com).
+### Architecture
 
-![containers](/public/images/containers-1.png)
+The service is containerized using Docker Compose, it is deployed to a Hetzner remote server.
+![containers](/public/images/containers.png)
 
 
 ## Getting Started
@@ -41,40 +44,29 @@ The service is containerized using Docker Compose, see below, it is deployed to 
     python -m venv env
     source env/bin/activate
     ```
+3. *Make some changes*
 
-3. Install dependencies:
+#### Local deployment 
+1. Create `.env.dev` file by copying `.env.example`.
+2. Create data and model files in your local directory under minio/data/
+3. Build and deploy locally, if this is your first time building it will take some time.
+
     ```bash
-    cd frontend
-    pip install -r requirements.txt
+    docker-compose -f docker-compose.dev.yml --env-file .env.dev up --build
     ```
 
-4. Run the development server:
+#### Production deployment
+1. ssh into the production server
+2. Create `.env.prod` file by copying `.env.example`.
+3. Transfer docker-compose.prod.yml file to the production server.
     ```bash
-    python -m frontend.app.run
+    scp docker-compose.prod.yml root@<server-ip>:/root/docker-compose.prod.yml
     ```
+4. Create `.env.prod` file by copying `.env.example`.
+5. Pull images from docker hub 
 
-### Docker Development
+6. Deploy the containers
 
-1. Build and run using Docker Compose:
     ```bash
-    # Development environment
-    docker-compose -f docker-compose.dev.yml up --build
+    docker-compose -f docker-compose.prod.yml --env-file .env.prod up --build
     ```
-
-2. Run automated tests:
-    ```bash
-    ./test_local.sh
-    ```
-
-## API Reference
-
-### Endpoints
-
-#### GET /
-Health check endpoint
-
-**Response**
-```json
-{
-    "message": "Welcome to the search API. Use POST /search to send queries."
-}
