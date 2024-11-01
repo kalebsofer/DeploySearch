@@ -1,15 +1,12 @@
 import psycopg2
 from minio import Minio
-from datetime import datetime, timedelta
 import logging
 import pandas as pd
-import numpy as np
 import io
-import torch.nn as nn
-from embedding_utils import EmbeddingProcessor
-from train import create_dataloader, fine_tune_model, save_model, SETTINGS
-from config.settings import get_settings
-import time
+from app.embedding_utils import EmbeddingProcessor
+from app.train import create_dataloader, fine_tune_model, save_model, SETTINGS
+from app.config.settings import get_settings
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -45,25 +42,22 @@ class ReinforcementService:
             port="5432",
         )
 
-    def fetch_recent_logs(self):
-        """Fetch logs from the past week where feedback was received"""
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=7)
-
-        logger.info(f"Fetching logs from {start_date} to {end_date}")
+    def fetch_feedback_logs(self, limit: int = 100):
+        """Fetch the last N logs where feedback was received"""
+        logger.info(f"Fetching last {limit} logs with feedback")
 
         with self.get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
                     SELECT user_id, session_id, query, selected_document, 
-                        similarity_score, feedback_received, created_at
+                           similarity_score, feedback_received, created_at
                     FROM search_logs
                     WHERE feedback_received = TRUE
-                    AND created_at BETWEEN %s AND %s
                     ORDER BY created_at DESC
-                """,
-                    (start_date, end_date),
+                    LIMIT %s
+                    """,
+                    (limit,),
                 )
                 logs = cur.fetchall()
                 logger.info(f"Found {len(logs)} logs with feedback")
@@ -118,6 +112,8 @@ class ReinforcementService:
             train_df = self.prepare_training_data(logs)
             train_df = self.tokenize_data(train_df)
 
+            logger.info(f"Prepared {len(train_df)} training examples")
+
             # Create dataset and dataloader
             dataset = self.embedding_processor.create_dataset(train_df)
             dataloader = create_dataloader(dataset, batch_size=SETTINGS["BATCH_SIZE"])
@@ -129,28 +125,28 @@ class ReinforcementService:
 
             # Save model
             save_model(model, self.minio_client, "data")
+            logger.info("Model training completed and saved successfully")
 
         except Exception as e:
             logger.error(f"Error in training process: {e}")
             raise
 
-    def run(self):
-        while True:
-            try:
-                logs = self.fetch_recent_logs()
-                if logs:
-                    logger.info(f"Starting training process with {len(logs)} logs")
-                    self.train(logs)
-                    logger.info("Training completed successfully")
+    def run_once(self):
+        """Single execution of the training process"""
+        try:
+            logs = self.fetch_feedback_logs(limit=100)
+            if logs:
+                logger.info(f"Starting training process with {len(logs)} logs")
+                self.train(logs)
+                logger.info("Training completed successfully")
+            else:
+                logger.info("No feedback logs found for training")
 
-                # Sleep for one week
-                time.sleep(7 * 24 * 60 * 60)
-
-            except Exception as e:
-                logger.error(f"Error in reinforcement training loop: {e}")
-                time.sleep(300)
+        except Exception as e:
+            logger.error(f"Error in training process: {e}")
+            raise
 
 
 if __name__ == "__main__":
     service = ReinforcementService()
-    service.run()
+    service.run_once()

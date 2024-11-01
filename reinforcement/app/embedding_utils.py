@@ -7,8 +7,12 @@ from nltk.stem import PorterStemmer
 from gensim.utils import simple_preprocess
 from gensim.models import Word2Vec
 import numpy as np
-from pathlib import Path
 import io
+import tempfile
+import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Download required NLTK data
 nltk.download("stopwords")
@@ -121,33 +125,25 @@ class EmbeddingProcessor:
             raise Exception(f"Error loading {object_name} from MinIO: {str(e)}")
 
     def load_word2vec(self):
-        """Load word2vec model from MinIO storage."""
+        """Load word vectors from MinIO storage."""
         model_name = "word-vector-embeddings.model"
         try:
             # Load from MinIO
             model_bytes = self._get_file_from_minio("data", model_name)
 
-            # Save temporarily and load with gensim
-            temp_path = Path("/tmp") / model_name
-            with open(temp_path, "wb") as f:
-                f.write(model_bytes)
-
-            w2v = Word2Vec.load(str(temp_path))
-            temp_path.unlink()  # Clean up
-
-            # Extract embeddings
-            vocab = w2v.wv.index_to_key
-            word_to_idx = {word: i for i, word in enumerate(vocab)}
-            embeddings_array = np.array([w2v.wv[word] for word in vocab])
-            embeddings = torch.tensor(embeddings_array, dtype=torch.float32)
+            # Load the numpy arrays from bytes
+            with io.BytesIO(model_bytes) as buffer:
+                data = np.load(buffer, allow_pickle=True)
+                vocab = data["vocab"].tolist()
+                embeddings = torch.tensor(data["embeddings"], dtype=torch.float32)
+                word_to_idx_items = data["word_to_idx"][0]
+                word_to_idx = dict(word_to_idx_items)
 
             return vocab, embeddings, word_to_idx
 
         except Exception as e:
-            raise Exception(f"Failed to load word2vec model: {str(e)}")
-        finally:
-            if "temp_path" in locals() and temp_path.exists():
-                temp_path.unlink()
+            logger.error(f"Error loading word vectors: {str(e)}")
+            raise Exception(f"Failed to load word vectors: {str(e)}")
 
     def _initialize_resources(self):
         # Load word vectors
@@ -169,13 +165,17 @@ class EmbeddingProcessor:
         # Load latest model weights
         model_bytes = self._get_file_from_minio("data", "two_tower_state_dict.pth")
         model_buffer = io.BytesIO(model_bytes)
-        self.model.load_state_dict(
-            torch.load(
-                model_buffer,
-                weights_only=True,
-                map_location=torch.device("cpu"),
-            )
-        )
+
+        # Load numpy arrays
+        loaded_arrays = np.load(model_buffer)
+
+        # Convert to state dict
+        state_dict = {name: torch.tensor(arr) for name, arr in loaded_arrays.items()}
+
+        # Debug print
+        print("\nLoading state dict with keys:", state_dict.keys())
+
+        self.model.load_state_dict(state_dict)
         self.model.eval()
 
     def get_embeddings(self, query: str, document: str):

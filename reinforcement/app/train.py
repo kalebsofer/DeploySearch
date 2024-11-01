@@ -3,14 +3,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
-from pathlib import Path
+from torch.utils.data import DataLoader
 import io
-from minio import Minio
 from datetime import datetime
 import logging
 
-from embedding_utils import TwoTowerModel, DocumentDataset, str_to_tokens, load_word2vec
+from app.embedding_utils import str_to_tokens
 
 logger = logging.getLogger(__name__)
 

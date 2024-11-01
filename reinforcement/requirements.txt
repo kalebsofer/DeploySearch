@@ -2,7 +2,7 @@
 torch
 numpy
 pandas
-faiss-cpu  # For vector similarity search
+faiss-cpu
 
 # NLP Libraries
 nltk
@@ -10,12 +10,12 @@ gensim
 
 # Storage/Database
 minio
-psycopg2-binary  # PostgreSQL adapter
-python-dotenv  # For loading .env files
+psycopg2-binary
+python-dotenv
 
 # Settings Management
 pydantic
-pydantic-settings  # For settings management
+pydantic-settings
 
 # Logging/Utils
-python-json-logger  # Optional, for structured logging
+python-json-logger

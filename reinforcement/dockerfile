@@ -1,18 +1,23 @@
-FROM python:3.10-slim
+FROM pytorch/pytorch:pytorch/manylinux-cpu
 
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
+    curl \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
+# Install remaining Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Remove torch since it's already in base image
+RUN sed -i '/torch/d' requirements.txt && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Install development dependencies
+RUN pip install --no-cache-dir pytest pytest-cov
+
+# Copy the code
 COPY . .
 
-# Run the application
-CMD ["python", "-m", "main"]
+CMD ["python", "-m", "app.main"]
