@@ -22,7 +22,6 @@ Trained on: [MS MARCO](https://microsoft.github.io/msmarco/)
 - The final hidden state represents an encoding of the whole sequence, and is the output of the RNN. This encoding is then used for a downstream task, whose loss function we use to train the RNN to make better encodings for that task.
 - We slighty modify our RNN so that at each step it outputs not only a hidden state for the next step, but also a prediction for the next token. 
 - We then compare these predictions with the actual next tokens via a cross-entropy loss function to train the RNN to become better at making the predictions.
--  We would use this kind of RNN for something like a language-to-language translation task.
 
 ![recursive](public/images/recursive.png)
 
