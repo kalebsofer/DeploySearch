@@ -41,7 +41,7 @@ Trained on: [MS MARCO](https://microsoft.github.io/msmarco/)
 
 The architecture is modular and scalable. Docker containers have a single purpose and are designed to be stateless.
 
-- **Frontend**: Hosted using a Streamlit server, accessible at [http://65.109.142.90:8501/](http://65.109.142.90:8501/).
+- **Frontend**: Hosted using a Streamlit server, accessible at [simplesearchengine.com](https://simplesearchengine.com)
 - **Backend**: Retrieves the model and performs inference on incoming queries.
 - **Storage**: MinIO is used to store different versions of the model.
 - **RDBS**: PostgreSQL is utilized to log user behavior and interactions.
