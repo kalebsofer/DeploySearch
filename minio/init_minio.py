@@ -9,8 +9,8 @@ def init_minio():
     # Initialize MinIO client
     client = Minio(
         "localhost:9000",
-        access_key=os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
-        secret_key=os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+        access_key=os.getenv("MINIO_ROOT_USER"),
+        secret_key=os.getenv("MINIO_ROOT_PASSWORD"),
         secure=os.getenv("MINIO_SECURE", "false").lower() == "true",
     )
 
