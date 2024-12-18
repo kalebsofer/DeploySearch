@@ -5,7 +5,7 @@ import faiss
 from .models.core import str_to_tokens
 from .utils.load_data import load_word2vec
 
-_, word_to_idx = load_word2vec() # Use embedding matrix word2vec-gensim-text8-custom-preprocess.model if you can
+_, word_to_idx = load_word2vec()
 
 """
 query: A string
@@ -14,7 +14,6 @@ df: A dataframe with documents and urls, from training-with-tokens.parquet
 index: A faiss index, loaded from doc-index-64.faiss
 """
 
-# Function to get nearest neighbors
 def get_nearest_docs(query, model, df, index, k=5):
     query_tokens = torch.tensor([str_to_tokens(query, word_to_idx)])
     query_mask = (query_tokens != 0).float()

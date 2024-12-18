@@ -6,15 +6,13 @@ from pathlib import Path
 def init_minio():
     """Initialize MinIO with data bucket and required files."""
 
-    # Initialize MinIO client
     client = Minio(
         "localhost:9000",
-        access_key=os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
-        secret_key=os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+        access_key=os.getenv("MINIO_ROOT_USER"),
+        secret_key=os.getenv("MINIO_ROOT_PASSWORD"),
         secure=os.getenv("MINIO_SECURE", "false").lower() == "true",
     )
 
-    # Create bucket
     try:
         if not client.bucket_exists("data"):
             print("Creating bucket: data")
@@ -29,11 +27,9 @@ def init_minio():
         "two_tower_state_dict.pth",
     ]
 
-    # Upload files from /data directory only if they don't exist in the bucket
     for file in files_to_upload:
         source_path = Path("/data") / file
         try:
-            # Check if file exists in bucket
             client.stat_object("data", file)
             print(f"File {file} already exists in bucket")
         except:

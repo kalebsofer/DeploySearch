@@ -37,5 +37,5 @@ def main():
     print(f"Embedding shape: {embedding.shape}")
     print(f"First few values: {embedding[:5]}")
 
-if __name__ == "__main__":  # Correct main check syntax
+if __name__ == "__main__":
     main()

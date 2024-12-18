@@ -21,11 +21,6 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - app-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`simplesearchengine.local`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
-      - "traefik.http.services.frontend.loadbalancer.server.port=8501"
 
   frontend:
     build:
@@ -37,11 +32,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`simplesearchengine.local`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
-      - "traefik.http.services.frontend.loadbalancer.server.port=8501"
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
     healthcheck:
@@ -52,6 +44,12 @@ services:
       start_period: 30s
     ports:
       - "8501:8501"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`simplesearchengine.com`) || Host(`www.simplesearchengine.com`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+      - "traefik.http.services.frontend.loadbalancer.server.port=8501"
 
   backend:
     build:
