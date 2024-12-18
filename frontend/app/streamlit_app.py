@@ -29,8 +29,44 @@ def search_documents(query: str):
         st.error(f"Error connecting to backend service: {str(e)}")
         return None
 
-
 st.title("Simple Search Engine")
+
+st.write(
+    """
+    The following model was trained on 80,000 pairs of queries and human-generated answers from Bing's <a href='https://microsoft.github.io/msmarco/' target='_blank'>MS MARCO dataset</a>. 
+    Training took a few hours on an [RTX A6000](https://www.runpod.io/pricing).
+""",
+    unsafe_allow_html=True,
+)
+
+with st.expander("How to Use", expanded=False):
+    st.write(
+        """
+    - Type a search query and hit search.
+    - Select an article from the dropdown.
+    - If you think it's relevant, say thanks!
+    - These logs will be passed back to the model as <a href='https://huggingface.co/blog/rlhf' target='_blank'>reinforcement learning from human feedback (RLHF)</a>, improving the model performance with usage.
+    """,
+        unsafe_allow_html=True,
+    )
+
+with st.expander("What is Cosine Similarity?", expanded=False):
+    st.write(
+        """
+    A measure used to determine how similar two vectors are, regardless of their size. It calculates the cosine of the angle between two vectors in an inner product space, which is often used in text analysis to measure document similarity. In the context of search engines, embeddings are vector representations of documents or queries, and cosine similarity helps in ranking documents based on their relevance to a given query.
+    """,
+        unsafe_allow_html=True,
+    )
+
+st.info(
+    """
+    Google indexes over 50 billion web pages, this database contains 100,000 static documents so keep expectations relative.
+
+    However, it will improve over time through reinforcement learning, getting better the more it's used!
+    """,
+    icon=":material/info:",
+)
+
 
 col1, col2 = st.columns(2)
 
@@ -39,7 +75,6 @@ with col1:
 
 search_button = st.button("Search")
 
-# Initialize session state
 if "search_performed" not in st.session_state:
     st.session_state.search_performed = False
 
@@ -59,7 +94,7 @@ if st.session_state.search_performed:
     ).reset_index(drop=True)
 
     with col1:
-        st.subheader("Most Similar Results:")
+        st.subheader("Results:")
         if len(df_similar) > 0:
             selected_similar = st.selectbox(
                 "Select a similar document to view full text:",
@@ -72,9 +107,9 @@ if st.session_state.search_performed:
             st.write("No similar documents found.")
 
     with col2:
-        st.subheader("Selected Document:")
+        st.subheader("Selected")
         if len(df_similar) > 0 and selected_similar is not None:
-            display_document(st.session_state.rel_docs, selected_similar, "Similar")
+            display_document(st.session_state.rel_docs, selected_similar, "")
 
             log_manager.log_search(
                 query=query,
@@ -88,6 +123,3 @@ if st.session_state.search_performed:
                     selected_document=st.session_state.rel_docs[selected_similar],
                 )
                 st.success("Thank you for your feedback!")
-
-else:
-    st.write("Enter a query and click 'Search' to see results.")

@@ -13,7 +13,6 @@ from .utils.load_data import load_word2vec
 
 settings = get_settings()
 
-# Model constants
 FREEZE_EMBEDDINGS = True
 PROJECTION_DIM = 64
 MARGIN = 0.5
@@ -41,25 +40,20 @@ class SearchEngine:
 
     def _initialize_resources(self):
         try:
-            # Load word2vec resources from MinIO
             self.vocab, embeddings, self.word_to_idx = load_word2vec()
 
-            # Initialize embedding layer
             self.embedding_layer = nn.Embedding.from_pretrained(
                 embeddings, freeze=FREEZE_EMBEDDINGS
             )
 
-            # Set dimensions
             self.embedding_dim = embeddings.shape[1]
             self.vocab_size = len(self.vocab)
 
-            # Load dataset from MinIO
             data_bytes = self._get_file_from_minio(
                 "data", "training-with-tokens.parquet"
             )
             self.df = pd.read_parquet(io.BytesIO(data_bytes))
 
-            # Load FAISS index from MinIO using a temporary file
             index_bytes = self._get_file_from_minio("data", "doc-index-64.faiss")
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                 temp_file.write(index_bytes)
@@ -68,13 +62,11 @@ class SearchEngine:
             try:
                 self.index = faiss.read_index(temp_path)
             finally:
-                Path(temp_path).unlink()  # Clean up temp file
+                Path(temp_path).unlink()
 
-            # Load model weights from MinIO
             model_bytes = self._get_file_from_minio("data", "two_tower_state_dict.pth")
             model_buffer = io.BytesIO(model_bytes)
 
-            # Initialize model
             self.model = TwoTowerModel(
                 embedding_dim=self.embedding_dim,
                 projection_dim=PROJECTION_DIM,
@@ -82,7 +74,6 @@ class SearchEngine:
                 margin=MARGIN,
             )
 
-            # Load model weights
             self.model.load_state_dict(
                 torch.load(
                     model_buffer,

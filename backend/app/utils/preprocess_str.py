@@ -9,7 +9,6 @@ from gensim.utils import simple_preprocess
 nltk.download("stopwords")
 nltk.download("punkt")
 
-# Initialize stemmer and stopwords
 stemmer = PorterStemmer()
 stop_words = set(stopwords.words("english"))
 
@@ -26,8 +25,9 @@ def preprocess_query(query: str) -> list[str]:
     query = query.lower()
     query = re.sub(f"[{string.punctuation}]", "", query)
     tokens = simple_preprocess(
-        query, deacc=True
-    )  # deacc=True removes accents and punctuations
+        query,
+        deacc=True
+    )
 
     tokens = preprocess_list(tokens)
     return tokens

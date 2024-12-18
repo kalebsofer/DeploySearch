@@ -9,14 +9,12 @@ class DocumentDataset(Dataset):
         self.docs_rel = df_input['doc_rel_tokens']
         self.docs_irr = df_input['doc_irr_tokens']
         self.queries = df_input['query_tokens']
-        # self.labels = df_input['relevance']
 
     def __len__(self):
         return len(self.docs_rel)
     
     def __getitem__(self, idx):
         return (
-            # This outputs tensors of token indices — variable length
             torch.tensor(self.docs_rel.iloc[idx], dtype=torch.long),
             torch.tensor(self.docs_irr.iloc[idx], dtype=torch.long),
             torch.tensor(self.queries.iloc[idx], dtype=torch.long),
@@ -61,13 +59,13 @@ class QueryProjection(nn.Module):
 class TwoTowerModel(nn.Module):
     def __init__(self, 
                  embedding_dim, 
-                 embedding_layer, # avg pooled embeddings will have dim = embedding_dim
+                 embedding_layer,
                  projection_dim,
                  margin):
         super().__init__()
         
         self.embedding = embedding_layer
-        self.encoding_dim = embedding_dim # for this model, since we're doing avg pooling
+        self.encoding_dim = embedding_dim
         self.doc_projection = DocumentProjection(embedding_dim, projection_dim)
         self.query_projection = QueryProjection(embedding_dim, projection_dim)
         self.margin = margin
@@ -88,7 +86,6 @@ class TwoTowerModel(nn.Module):
         return query_encoding
 
     def doc_project(self, doc_encoding):
-        # Project doc encoding to a lower-dimensional space
         return self.doc_projection(doc_encoding)
 
     

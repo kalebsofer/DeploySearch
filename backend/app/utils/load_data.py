@@ -45,19 +45,16 @@ def load_word2vec(random_seed=42):
     model_name = "word-vector-embeddings.model"
 
     try:
-        # Try to load from MinIO
         response = minio_client.get_object("data", model_name)
         model_bytes = response.read()
 
-        # Save temporarily and load with gensim
         temp_path = Path("/tmp") / model_name
         with open(temp_path, "wb") as f:
             f.write(model_bytes)
 
         w2v = gensim.models.Word2Vec.load(str(temp_path))
-        temp_path.unlink()  # Clean up temporary file
+        temp_path.unlink()
 
-        # Extract embeddings
         vocab = w2v.wv.index_to_key
         word_to_idx = {word: i for i, word in enumerate(vocab)}
         embeddings_array = np.array([w2v.wv[word] for word in vocab])
@@ -75,7 +72,6 @@ def load_word2vec(random_seed=42):
             f"Unexpected error loading word2vec model: {str(e)}"
         ) from e
     finally:
-        # Ensure temp file is cleaned up even if an error occurs
         if "temp_path" in locals() and temp_path.exists():
             temp_path.unlink()
 
