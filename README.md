@@ -4,7 +4,7 @@
 
 ## Overview
 
-A high-performance semantic search engine built with FastAPI, PyTorch and Faiss. This service provides real-time document search using a Two-Tower RNN model architecture, see [TwoTowerSearch](https://github.com/kalebsofer/TwoTowerSearch) for the model training. The project is fully containerized, scalable, and modularised. It is deployed on a rented Hetzner server.
+A high-performance semantic search engine built with FastAPI, PyTorch and Faiss. This service provides real-time document search using a Two-Tower RNN model architecture, see [TwoTowerSearch](https://github.com/kalebsofer/TwoTowerSearch) for the model training. The project is modular, fully containerized and scalable. It is currently deployed on a Hetzner server I'm renting.
 
 Trained on: [MS MARCO](https://microsoft.github.io/msmarco/)
 
